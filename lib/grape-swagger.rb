@@ -266,6 +266,7 @@ module Grape
                 nested_models = model.exposures.map do |_, config|
                   if config.key?(:documentation)
                     model = config[:using]
+
                     model.respond_to?(:constantize) ? model.constantize : model
                   end
                 end.compact
@@ -345,7 +346,8 @@ module Grape
                 authorizations: nil,
                 root_base_path: true,
                 api_documentation: { desc: 'Swagger compatible API description' },
-                specific_api_documentation: { desc: 'Swagger compatible API description for specific API' }
+                specific_api_documentation: { desc: 'Swagger compatible API description for specific API' },
+                default_description: ->(name) {"Operations about #{name.pluralize}"}
               }
 
               options = defaults.merge(options)
@@ -391,7 +393,8 @@ module Grape
                   url_format  = '.{format}' unless @@hide_format
 
                   description = namespaces[local_route] && namespaces[local_route].options[:desc]
-                  description ||= "Operations about #{local_route.pluralize}"
+                  description ||= options[:default_description].call(local_route) if options[:default_description].is_a? Proc
+                  description ||= options[:default_description] if options[:default_description].is_a? String
 
                   {
                     path: "/#{local_route}#{url_format}",
